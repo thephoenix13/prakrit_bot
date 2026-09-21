@@ -1,0 +1,30 @@
+{
+  "name": "prakrit-ai-shy",
+  "version": "1.0.0",
+  "description": "Shy — WhatsApp healthcare AI assistant for Prakrit AI",
+  "main": "src/bot.js",
+  "scripts": {
+    "start": "node src/bot.js",
+    "dev": "node --watch src/bot.js",
+    "pm2:start": "pm2 start pm2.config.js",
+    "pm2:stop": "pm2 stop shy-bot",
+    "pm2:restart": "pm2 restart shy-bot",
+    "pm2:logs": "pm2 logs shy-bot"
+  },
+  "dependencies": {
+    "@azure-rest/ai-content-safety": "^1.0.0",
+    "@azure/ai-form-recognizer": "^4.1.0",
+    "@azure/openai": "^1.0.0-beta.12",
+    "axios": "^1.7.2",
+    "dotenv": "^16.4.5",
+    "franc": "^6.2.0",
+    "node-cache": "^5.1.2",
+    "pino": "^9.1.0",
+    "pino-pretty": "^11.1.0",
+    "redis": "^4.6.15",
+    "@open-wa/wa-automate": "^4.7.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
