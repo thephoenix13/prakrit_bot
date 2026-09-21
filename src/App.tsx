@@ -1,16 +1,16 @@
 import { useState } from 'react'
 
-type Tab = 'dashboard' | 'deploy' | 'architecture' | 'commands' | 'monitoring'
+type Tab = 'deploy' | 'architecture' | 'commands' | 'monitoring' | 'files'
 
 function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard')
+  const [activeTab, setActiveTab] = useState<Tab>('deploy')
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'deploy', label: 'Deploy', icon: '🚀' },
+    { id: 'deploy', label: 'Deploy Now', icon: '🚀' },
     { id: 'architecture', label: 'Architecture', icon: '🏗️' },
     { id: 'commands', label: 'Commands', icon: '⌨️' },
     { id: 'monitoring', label: 'Monitoring', icon: '📈' },
+    { id: 'files', label: 'File Reference', icon: '📁' },
   ]
 
   return (
@@ -24,12 +24,12 @@ function App() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Prakrit AI — Shy Bot</h1>
-              <p className="text-xs text-gray-400">Production-Ready WhatsApp Healthcare Assistant</p>
+              <p className="text-xs text-gray-400">Deployment Guide — Code is on GitHub ✓</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="px-2 py-1 rounded-full bg-emerald-900/50 text-emerald-400 text-xs font-medium border border-emerald-700">
-              ✓ Production Ready
+              ✓ Pushed to GitHub
             </span>
           </div>
         </div>
@@ -57,118 +57,365 @@ function App() {
         </div>
       </nav>
 
-      {/* Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {activeTab === 'dashboard' && <Dashboard />}
-        {activeTab === 'deploy' && <Deploy />}
+        {activeTab === 'deploy' && <DeployNow />}
         {activeTab === 'architecture' && <Architecture />}
         {activeTab === 'commands' && <Commands />}
         {activeTab === 'monitoring' && <Monitoring />}
+        {activeTab === 'files' && <FileReference />}
       </main>
 
       <footer className="border-t border-gray-800 py-6 text-center text-xs text-gray-500">
-        Prakrit AI — Shy Bot • All phases complete • Ready for GitHub + Azure deployment
+        Prakrit AI — Shy Bot • Next: Azure Setup → GitHub Secrets → Deploy
       </footer>
     </div>
   )
 }
 
-function Dashboard() {
+/* =========================================================
+   DEPLOY NOW — The main action page
+   ========================================================= */
+function DeployNow() {
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
+
+  const toggleStep = (step: number) => {
+    setCompletedSteps(prev => {
+      const next = new Set(prev)
+      if (next.has(step)) next.delete(step)
+      else next.add(step)
+      return next
+    })
+  }
+
   return (
     <div className="space-y-6">
-      {/* Completion Banner */}
+      {/* Progress Banner */}
       <div className="rounded-2xl bg-gradient-to-br from-emerald-950/50 to-teal-950/50 border border-emerald-700 p-6">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="text-3xl">✅</div>
+        <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-xl font-bold text-white">All Phases Complete</h2>
-            <p className="text-sm text-emerald-300">Bot is production-ready for GitHub + Azure deployment</p>
+            <h2 className="text-xl font-bold text-white">🚀 Deploy Shy to Azure</h2>
+            <p className="text-sm text-emerald-300">5 steps to production. Takes ~15 minutes.</p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-white">{completedSteps.size}/5</div>
+            <div className="text-xs text-gray-400">steps complete</div>
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-2 mt-4">
-          {['Foundation', 'Voice', 'Documents', 'Images', 'Memory', 'Hardening'].map((phase, i) => (
-            <div key={i} className="rounded-lg bg-emerald-900/30 border border-emerald-700 px-3 py-2 text-center">
-              <div className="text-[10px] text-emerald-400">Phase {i + 1}</div>
-              <div className="text-xs font-medium text-white">{phase}</div>
-              <div className="text-[10px] text-emerald-500 mt-0.5">✓ Done</div>
-            </div>
-          ))}
+        <div className="w-full bg-gray-800 rounded-full h-2 mt-2">
+          <div
+            className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
+            style={{ width: `${(completedSteps.size / 5) * 100}%` }}
+          ></div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Source Files" value="15" icon="📁" />
-        <StatCard label="API Integrations" value="3" icon="🔌" />
-        <StatCard label="Message Types" value="4" icon="💬" />
-        <StatCard label="Admin Commands" value="7" icon="⌨️" />
-      </div>
+      {/* Step 0: Prerequisites Check */}
+      <StepCard
+        number={0}
+        title="Prerequisites Check"
+        description="Make sure you have these installed and ready"
+        completed={completedSteps.has(0)}
+        onToggle={() => toggleStep(0)}
+        isPrereq
+      >
+        <div className="space-y-2">
+          <CheckItem label="Azure CLI installed" command="az --version" />
+          <CheckItem label="Logged into Azure" command="az login" />
+          <CheckItem label="Docker installed" command="docker --version" />
+          <CheckItem label="Node.js 18+ installed" command="node --version" />
+          <CheckItem label="Deepgram API key ready" note="Get from console.deepgram.com" />
+          <CheckItem label="Azure OpenAI deployment ready" note="GPT-4o model deployed in Azure Portal" />
+        </div>
+      </StepCard>
 
-      {/* File Overview */}
+      {/* Step 1: Create Azure Infrastructure */}
+      <StepCard
+        number={1}
+        title="Create Azure Infrastructure"
+        description="Run the setup script to create all Azure resources in one go"
+        completed={completedSteps.has(1)}
+        onToggle={() => toggleStep(1)}
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-gray-300">
+            This creates: Resource Group, Container Registry, Container Apps Environment,
+            Container App, Redis Cache, and Log Analytics Workspace.
+          </p>
+          <CodeBlock
+            label="Make script executable and run it"
+            commands={[
+              'cd bot',
+              'chmod +x scripts/azure-setup.sh',
+              './scripts/azure-setup.sh',
+            ]}
+          />
+          <WarningBox>
+            The script uses default names (prakrit-ai-rg, prakritai, etc.).
+            Edit the variables at the top of <code>scripts/azure-setup.sh</code> if you want different names.
+          </WarningBox>
+          <InfoBox>
+            <strong>What gets created:</strong>
+            <ul className="mt-2 space-y-1 text-xs">
+              <li>• <strong>Resource Group:</strong> prakrit-ai-rg</li>
+              <li>• <strong>Container Registry:</strong> prakritai.azurecr.io</li>
+              <li>• <strong>Container Apps Env:</strong> prakrit-ai-env</li>
+              <li>• <strong>Container App:</strong> shy-bot</li>
+              <li>• <strong>Redis:</strong> prakrit-redis (Basic C0)</li>
+              <li>• <strong>Log Analytics:</strong> prakrit-ai-logs</li>
+            </ul>
+          </InfoBox>
+        </div>
+      </StepCard>
+
+      {/* Step 2: Set Azure Container App Secrets */}
+      <StepCard
+        number={2}
+        title="Set API Secrets in Azure"
+        description="Add your Deepgram and Azure OpenAI keys to the Container App"
+        completed={completedSteps.has(2)}
+        onToggle={() => toggleStep(2)}
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-gray-300">
+            These are your actual API keys. They're stored securely in Azure Container App secrets
+            and injected as environment variables at runtime.
+          </p>
+          <CodeBlock
+            label="Set secrets (replace with your actual values)"
+            commands={[
+              'az containerapp secret set \\',
+              '  --name shy-bot \\',
+              '  --resource-group prakrit-ai-rg \\',
+              '  --secrets \\',
+              '    deepgram-api-key=YOUR_DEEPGRAM_KEY \\',
+              '    azure-openai-endpoint=https://YOUR_RESOURCE.openai.azure.com \\',
+              '    azure-openai-api-key=YOUR_AZURE_OPENAI_KEY \\',
+              '    azure-openai-deployment=gpt-4o',
+            ]}
+          />
+          <CodeBlock
+            label="Link secrets to environment variables"
+            commands={[
+              'az containerapp update \\',
+              '  --name shy-bot \\',
+              '  --resource-group prakrit-ai-rg \\',
+              '  --set-env-vars \\',
+              '    "DEEPGRAM_API_KEY=secretref:deepgram-api-key" \\',
+              '    "AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint" \\',
+              '    "AZURE_OPENAI_API_KEY=secretref:azure-openai-api-key" \\',
+              '    "AZURE_OPENAI_DEPLOYMENT=secretref:azure-openai-deployment" \\',
+              '    "BOT_NAME=Shy" \\',
+              '    "NODE_ENV=production" \\',
+              '    "LOG_LEVEL=info" \\',
+              '    "ADMIN_PHONE_NUMBER=91XXXXXXXXXX"',
+            ]}
+          />
+          <WarningBox>
+            Replace <code>91XXXXXXXXXX</code> with YOUR phone number (with country code, no +).
+            This is the number that can use admin commands like /status, /clear, etc.
+          </WarningBox>
+        </div>
+      </StepCard>
+
+      {/* Step 3: Configure GitHub Secrets */}
+      <StepCard
+        number={3}
+        title="Configure GitHub Secrets"
+        description="Enable CI/CD by adding secrets to your GitHub repository"
+        completed={completedSteps.has(3)}
+        onToggle={() => toggleStep(3)}
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-gray-300">
+            Go to your GitHub repo → <strong>Settings</strong> → <strong>Secrets and variables</strong> → <strong>Actions</strong> → <strong>New repository secret</strong>
+          </p>
+
+          <div className="space-y-3">
+            <SecretBlock
+              name="AZURE_CREDENTIALS"
+              description="Service principal for GitHub Actions to deploy to Azure"
+              getCommand={[
+                '# Create service principal (replace {subscription-id})',
+                'az ad sp create-for-rbac \\',
+                '  --name "github-actions-shy-bot" \\',
+                '  --role contributor \\',
+                '  --scopes /subscriptions/{subscription-id}/resourceGroups/prakrit-ai-rg \\',
+                '  --sdk-auth',
+                '',
+                '# Copy the ENTIRE JSON output as the secret value',
+              ]}
+            />
+            <SecretBlock
+              name="AZURE_ACR_USERNAME"
+              description="Container Registry login username"
+              getCommand={[
+                'az acr credential show \\',
+                '  --name prakritai \\',
+                '  --query "username" -o tsv',
+              ]}
+            />
+            <SecretBlock
+              name="AZURE_ACR_PASSWORD"
+              description="Container Registry login password"
+              getCommand={[
+                'az acr credential show \\',
+                '  --name prakritai \\',
+                '  --query "passwords[0].value" -o tsv',
+              ]}
+            />
+          </div>
+
+          <InfoBox>
+            <strong>Tip:</strong> Your subscription ID can be found with: <code className="text-xs">az account show --query "id" -o tsv</code>
+          </InfoBox>
+        </div>
+      </StepCard>
+
+      {/* Step 4: Trigger Deployment */}
+      <StepCard
+        number={4}
+        title="Trigger First Deployment"
+        description="Push to main branch to trigger the CI/CD pipeline"
+        completed={completedSteps.has(4)}
+        onToggle={() => toggleStep(4)}
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-gray-300">
+            The GitHub Actions workflow will automatically:
+          </p>
+          <div className="flex flex-wrap items-center gap-2 py-2">
+            <PipelineBadge label="Push to main" color="gray" />
+            <span className="text-gray-600">→</span>
+            <PipelineBadge label="Build & Test" color="blue" />
+            <span className="text-gray-600">→</span>
+            <PipelineBadge label="Docker Build" color="purple" />
+            <span className="text-gray-600">→</span>
+            <PipelineBadge label="Push to ACR" color="orange" />
+            <span className="text-gray-600">→</span>
+            <PipelineBadge label="Deploy" color="emerald" />
+            <span className="text-gray-600">→</span>
+            <PipelineBadge label="Health Check" color="green" />
+          </div>
+          <CodeBlock
+            label="Make a small change and push to trigger the pipeline"
+            commands={[
+              '# If you already pushed, make a trivial change:',
+              'echo "# Deploy trigger" >> bot/README.md',
+              'git add .',
+              'git commit -m "trigger deployment"',
+              'git push origin main',
+            ]}
+          />
+          <InfoBox>
+            <strong>Monitor the deployment:</strong> Go to your GitHub repo → <strong>Actions</strong> tab.
+            You'll see the workflow running. It takes about 3-5 minutes.
+          </InfoBox>
+        </div>
+      </StepCard>
+
+      {/* Step 5: WhatsApp Authentication */}
+      <StepCard
+        number={5}
+        title="Authenticate WhatsApp (QR Code)"
+        description="Scan the QR code to connect Shy to your WhatsApp"
+        completed={completedSteps.has(5)}
+        onToggle={() => toggleStep(5)}
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-gray-300">
+            OpenWA needs to authenticate with WhatsApp by scanning a QR code.
+            This only needs to happen once — the session persists in the container.
+          </p>
+          <CodeBlock
+            label="View container logs to find the QR code"
+            commands={[
+              '# Stream logs from Azure Container App',
+              'az containerapp logs show \\',
+              '  --name shy-bot \\',
+              '  --resource-group prakrit-ai-rg \\',
+              '  --follow',
+            ]}
+          />
+          <div className="rounded-xl bg-gray-800 border border-gray-700 p-4">
+            <div className="text-sm font-semibold text-white mb-2">📱 Then on your phone:</div>
+            <ol className="space-y-1 text-xs text-gray-300 list-decimal list-inside">
+              <li>Open WhatsApp</li>
+              <li>Go to Settings → Linked Devices</li>
+              <li>Tap "Link a Device"</li>
+              <li>Scan the QR code shown in the terminal/logs</li>
+            </ol>
+          </div>
+          <WarningBox>
+            <strong>Important:</strong> The QR code expires quickly (~20 seconds). If it expires,
+            the bot will generate a new one. Keep the logs open and scan immediately.
+          </WarningBox>
+          <InfoBox>
+            <strong>Verify it worked:</strong> Send "Hey" to the WhatsApp number connected to Shy.
+            You should get a health-focused greeting back within 2-5 seconds.
+          </InfoBox>
+        </div>
+      </StepCard>
+
+      {/* Post-Deploy Verification */}
       <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
-        <h2 className="text-lg font-bold text-white mb-4">Project Files</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FileGroup
-            title="Core Bot"
-            files={[
-              { name: 'src/bot.js', desc: 'Entry point, OpenWA, lifecycle' },
-              { name: 'src/router.js', desc: 'Message type classifier' },
-              { name: 'src/server.js', desc: 'Health check HTTP server' },
-              { name: 'src/config/index.js', desc: 'Environment config' },
+        <h3 className="text-lg font-bold text-white mb-4">✅ Post-Deploy Verification</h3>
+        <div className="space-y-3">
+          <CodeBlock
+            label="Get your bot's URL"
+            commands={[
+              'az containerapp show \\',
+              '  --name shy-bot \\',
+              '  --resource-group prakrit-ai-rg \\',
+              '  --query "properties.configuration.ingress.fqdn" -o tsv',
             ]}
           />
-          <FileGroup
-            title="Processors"
-            files={[
-              { name: 'processors/text.js', desc: 'Text → LLM' },
-              { name: 'processors/voice.js', desc: 'Voice → Deepgram → LLM' },
-              { name: 'processors/document.js', desc: 'Doc → Azure DI → LLM' },
-              { name: 'processors/image.js', desc: 'Image → GPT-4 Vision' },
+          <CodeBlock
+            label="Health check"
+            commands={[
+              'curl https://<your-fqdn>/health',
+              'curl https://<your-fqdn>/ready',
+              'curl https://<your-fqdn>/status',
             ]}
           />
-          <FileGroup
-            title="Services"
-            files={[
-              { name: 'services/azure-openai.js', desc: 'Chat + Vision API' },
-              { name: 'services/deepgram.js', desc: 'Speech-to-text' },
-              { name: 'services/azure-docs.js', desc: 'Document OCR' },
-              { name: 'services/memory.js', desc: 'Conversation history' },
-              { name: 'services/metrics.js', desc: 'Performance metrics' },
-            ]}
-          />
-          <FileGroup
-            title="Middleware & Utils"
-            files={[
-              { name: 'middleware/rateLimit.js', desc: 'Rate limiting' },
-              { name: 'middleware/admin.js', desc: 'Admin commands' },
-              { name: 'utils/formatter.js', desc: 'Plain text cleanup' },
-              { name: 'utils/language.js', desc: 'Language detection' },
-              { name: 'utils/logger.js', desc: 'Structured logging' },
-            ]}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+            <VerifyCard
+              title="Health Check"
+              command="GET /health"
+              expected='{"status":"ok"}'
+            />
+            <VerifyCard
+              title="Readiness"
+              command="GET /ready"
+              expected='{"whatsapp":"connected"}'
+            />
+            <VerifyCard
+              title="Status"
+              command="GET /status"
+              expected="Full bot status JSON"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Deployment Files */}
-      <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
-        <h2 className="text-lg font-bold text-white mb-4">Deployment & CI/CD</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FileGroup
-            title="Docker"
-            files={[
-              { name: 'Dockerfile', desc: 'Multi-stage production build' },
-              { name: 'docker-compose.yml', desc: 'Local dev with Redis' },
-              { name: '.dockerignore', desc: 'Docker build exclusions' },
-            ]}
+      {/* Troubleshooting Quick Links */}
+      <div className="rounded-2xl bg-amber-950/20 border border-amber-800 p-6">
+        <h3 className="text-lg font-bold text-amber-400 mb-4">⚠️ Common Issues</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <IssueCard
+            issue="QR code not showing in logs"
+            fix="Container might still be starting. Wait 60s and refresh logs. Check: az containerapp logs show --name shy-bot --resource-group prakrit-ai-rg --follow"
           />
-          <FileGroup
-            title="Azure & GitHub"
-            files={[
-              { name: '.github/workflows/ci-cd.yml', desc: 'Build, push, deploy' },
-              { name: 'scripts/azure-setup.sh', desc: 'One-click Azure setup' },
-              { name: 'docs/AZURE_DEPLOYMENT.md', desc: 'Complete deploy guide' },
-              { name: 'docs/GITHUB_SECRETS.md', desc: 'Secrets configuration' },
-            ]}
+          <IssueCard
+            issue="CI/CD pipeline fails at deploy step"
+            fix="Check AZURE_CREDENTIALS secret is valid JSON. Verify service principal has 'contributor' role on the resource group."
+          />
+          <IssueCard
+            issue="Bot responds with errors"
+            fix="Check secrets are set correctly: az containerapp secret list --name shy-bot --resource-group prakrit-ai-rg"
+          />
+          <IssueCard
+            issue="WhatsApp disconnects after some time"
+            fix="Normal — PM2/Docker auto-restarts the bot. Re-scan QR if session fully expired. Container Apps keeps it alive."
           />
         </div>
       </div>
@@ -176,275 +423,231 @@ function Dashboard() {
   )
 }
 
-function StatCard({ label, value, icon }: { label: string; value: string; icon: string }) {
+/* =========================================================
+   SHARED COMPONENTS
+   ========================================================= */
+
+function StepCard({ number, title, description, completed, onToggle, isPrereq, children }: {
+  number: number; title: string; description: string; completed: boolean;
+  onToggle: () => void; isPrereq?: boolean; children: React.ReactNode;
+}) {
   return (
-    <div className="rounded-xl bg-gray-900 border border-gray-700 p-4">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-2xl">{icon}</span>
+    <div className={`rounded-2xl border p-6 transition-all ${
+      completed ? 'bg-emerald-950/20 border-emerald-700' : 'bg-gray-900 border-gray-700'
+    }`}>
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm ${
+            completed ? 'bg-emerald-600 text-white' : isPrereq ? 'bg-gray-700 text-gray-300' : 'bg-emerald-900 text-emerald-400 border border-emerald-700'
+          }`}>
+            {completed ? '✓' : number}
+          </div>
+          <div>
+            <h3 className="font-bold text-white">{title}</h3>
+            <p className="text-xs text-gray-400">{description}</p>
+          </div>
+        </div>
+        <button
+          onClick={onToggle}
+          className={`text-xs px-3 py-1 rounded-full transition-all ${
+            completed
+              ? 'bg-emerald-800 text-emerald-300 hover:bg-emerald-700'
+              : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+          }`}
+        >
+          {completed ? '✓ Done' : 'Mark Done'}
+        </button>
       </div>
-      <div className="text-2xl font-bold text-white">{value}</div>
-      <div className="text-xs text-gray-400 mt-1">{label}</div>
+      <div className={completed ? 'opacity-60' : ''}>
+        {children}
+      </div>
     </div>
   )
 }
 
-function FileGroup({ title, files }: { title: string; files: { name: string; desc: string }[] }) {
+function CodeBlock({ label, commands }: { label: string; commands: string[] }) {
+  const [copied, setCopied] = useState(false)
+  const fullCommand = commands.join('\n')
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(fullCommand)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
-    <div className="rounded-xl bg-gray-800/30 border border-gray-700 p-4">
-      <h3 className="text-sm font-semibold text-emerald-400 mb-3">{title}</h3>
-      <div className="space-y-2">
-        {files.map((f, i) => (
-          <div key={i} className="flex items-start gap-2">
-            <span className="text-gray-600 text-xs mt-0.5">📄</span>
-            <div>
-              <code className="text-xs text-gray-200 font-mono">{f.name}</code>
-              <div className="text-[10px] text-gray-500">{f.desc}</div>
-            </div>
-          </div>
+    <div className="rounded-xl bg-gray-800 border border-gray-700 overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 bg-gray-750 border-b border-gray-700">
+        <span className="text-xs text-gray-400">{label}</span>
+        <button
+          onClick={handleCopy}
+          className="text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white transition-all"
+        >
+          {copied ? '✓ Copied!' : '📋 Copy'}
+        </button>
+      </div>
+      <pre className="p-3 text-sm text-emerald-300 font-mono overflow-x-auto">
+        {commands.map((cmd, i) => (
+          <div key={i} className={cmd === '' ? 'h-2' : ''}>{cmd}</div>
         ))}
-      </div>
+      </pre>
     </div>
   )
 }
 
-function Deploy() {
+function CheckItem({ label, command, note }: { label: string; command?: string; note?: string }) {
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-white">Deployment Guide</h2>
-
-      {/* Quick Deploy */}
-      <div className="rounded-2xl bg-gradient-to-br from-blue-950/50 to-gray-900 border border-blue-700 p-6">
-        <h3 className="text-lg font-bold text-white mb-2">🚀 Quick Deploy (3 Steps)</h3>
-        <p className="text-sm text-gray-300 mb-4">Get Shy running on Azure in under 15 minutes.</p>
-        <div className="space-y-4">
-          <Step number={1} title="Create Azure Resources" command="./scripts/azure-setup.sh" />
-          <Step number={2} title="Configure GitHub Secrets" command="See docs/GITHUB_SECRETS.md" />
-          <Step number={3} title="Push to main" command="git push origin main" />
-        </div>
-      </div>
-
-      {/* Azure Resources Created */}
-      <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
-        <h3 className="text-lg font-bold text-white mb-4">Azure Resources Created by Setup Script</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {[
-            { name: 'Resource Group', desc: 'prakrit-ai-rg', icon: '📦' },
-            { name: 'Container Registry', desc: 'prakritai.azurecr.io', icon: '🐳' },
-            { name: 'Container Apps Env', desc: 'prakrit-ai-env', icon: '🌐' },
-            { name: 'Container App', desc: 'shy-bot', icon: '🚀' },
-            { name: 'Redis Cache', desc: 'prakrit-redis', icon: '🔴' },
-            { name: 'Log Analytics', desc: 'prakrit-ai-logs', icon: '📊' },
-          ].map((r, i) => (
-            <div key={i} className="rounded-lg bg-gray-800/50 border border-gray-700 p-3">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{r.icon}</span>
-                <div>
-                  <div className="text-sm font-semibold text-white">{r.name}</div>
-                  <code className="text-[10px] text-gray-400">{r.desc}</code>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* CI/CD Pipeline */}
-      <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
-        <h3 className="text-lg font-bold text-white mb-4">CI/CD Pipeline (GitHub Actions)</h3>
-        <div className="flex flex-wrap items-center gap-2">
-          <PipelineStep label="Push to main" color="gray" />
-          <PipelineArrow />
-          <PipelineStep label="CI: Build & Test" color="blue" />
-          <PipelineArrow />
-          <PipelineStep label="Build Docker" color="purple" />
-          <PipelineArrow />
-          <PipelineStep label="Push to ACR" color="orange" />
-          <PipelineArrow />
-          <PipelineStep label="Deploy to Azure" color="emerald" />
-          <PipelineArrow />
-          <PipelineStep label="Health Check" color="green" />
-        </div>
-        <div className="mt-4 rounded-lg bg-gray-800 p-3">
-          <div className="text-xs text-gray-400 mb-1">Triggers on:</div>
-          <code className="text-xs text-emerald-300">push to main, pull request to main</code>
-        </div>
-      </div>
-
-      {/* GitHub Secrets */}
-      <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
-        <h3 className="text-lg font-bold text-white mb-4">Required GitHub Secrets</h3>
-        <div className="space-y-3">
-          <SecretRow name="AZURE_CREDENTIALS" desc="Service principal JSON for Azure deployment" />
-          <SecretRow name="AZURE_ACR_USERNAME" desc="Container Registry username" />
-          <SecretRow name="AZURE_ACR_PASSWORD" desc="Container Registry password" />
-        </div>
-        <div className="mt-4 rounded-lg bg-amber-950/30 border border-amber-700 p-3">
-          <div className="text-xs text-amber-300">
-            💡 Create service principal: <code className="text-amber-200">az ad sp create-for-rbac --name "github-actions" --role contributor --scopes /subscriptions/&#123;sub-id&#125;/resourceGroups/prakrit-ai-rg --sdk-auth</code>
-          </div>
-        </div>
-      </div>
-
-      {/* Docker Commands */}
-      <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
-        <h3 className="text-lg font-bold text-white mb-4">Docker Commands</h3>
-        <div className="space-y-3">
-          <CodeBlock label="Local development (with Redis)" command="cd bot && docker-compose up -d" />
-          <CodeBlock label="Build image" command="cd bot && docker build -t shy-bot:latest ." />
-          <CodeBlock label="View logs" command="cd bot && docker-compose logs -f shy-bot" />
-          <CodeBlock label="Stop" command="cd bot && docker-compose down" />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function Step({ number, title, command }: { number: number; title: string; command: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs text-white shrink-0">
-        {number}
-      </div>
+    <div className="flex items-start gap-3 rounded-lg bg-gray-800/50 p-2">
+      <div className="w-4 h-4 rounded border border-gray-600 mt-0.5 shrink-0"></div>
       <div className="flex-1">
-        <div className="text-sm font-semibold text-white">{title}</div>
-        <code className="text-xs bg-gray-800 text-emerald-300 px-2 py-1 rounded mt-1 inline-block">{command}</code>
+        <div className="text-sm text-gray-200">{label}</div>
+        {command && <code className="text-xs text-gray-500 font-mono">{command}</code>}
+        {note && <div className="text-xs text-gray-500 mt-0.5">{note}</div>}
       </div>
     </div>
   )
 }
 
-function PipelineStep({ label, color }: { label: string; color: string }) {
+function WarningBox({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg bg-amber-950/30 border border-amber-700 p-3 text-xs text-amber-300">
+      ⚠️ {children}
+    </div>
+  )
+}
+
+function InfoBox({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg bg-blue-950/30 border border-blue-700 p-3 text-xs text-blue-300">
+      💡 {children}
+    </div>
+  )
+}
+
+function SecretBlock({ name, description, getCommand }: { name: string; description: string; getCommand: string[] }) {
+  return (
+    <div className="rounded-xl bg-gray-800/50 border border-gray-700 p-4">
+      <div className="flex items-start justify-between mb-2">
+        <div>
+          <code className="text-sm text-emerald-300 font-mono font-bold">{name}</code>
+          <div className="text-xs text-gray-400 mt-0.5">{description}</div>
+        </div>
+        <span className="text-[10px] px-2 py-0.5 rounded bg-red-900/30 text-red-400 border border-red-700 shrink-0">Secret</span>
+      </div>
+      <div className="mt-2">
+        <div className="text-[10px] text-gray-500 mb-1">Get value with:</div>
+        <pre className="text-xs text-gray-400 font-mono bg-gray-900 rounded p-2 overflow-x-auto">
+          {getCommand.join('\n')}
+        </pre>
+      </div>
+    </div>
+  )
+}
+
+function PipelineBadge({ label, color }: { label: string; color: string }) {
   const colors: Record<string, string> = {
-    gray: 'bg-gray-700 border-gray-600',
-    blue: 'bg-blue-900/50 border-blue-700',
-    purple: 'bg-purple-900/50 border-purple-700',
-    orange: 'bg-orange-900/50 border-orange-700',
-    emerald: 'bg-emerald-900/50 border-emerald-700',
-    green: 'bg-green-900/50 border-green-700',
+    gray: 'bg-gray-700 border-gray-600 text-gray-200',
+    blue: 'bg-blue-900/50 border-blue-700 text-blue-300',
+    purple: 'bg-purple-900/50 border-purple-700 text-purple-300',
+    orange: 'bg-orange-900/50 border-orange-700 text-orange-300',
+    emerald: 'bg-emerald-900/50 border-emerald-700 text-emerald-300',
+    green: 'bg-green-900/50 border-green-700 text-green-300',
   }
   return (
-    <div className={`rounded-lg border px-3 py-2 text-xs font-medium text-white ${colors[color]}`}>
+    <span className={`rounded-lg border px-2.5 py-1 text-xs font-medium ${colors[color]}`}>
       {label}
-    </div>
+    </span>
   )
 }
 
-function PipelineArrow() {
-  return <div className="text-gray-600">→</div>
-}
-
-function SecretRow({ name, desc }: { name: string; desc: string }) {
+function VerifyCard({ title, command, expected }: { title: string; command: string; expected: string }) {
   return (
-    <div className="flex items-center justify-between rounded-lg bg-gray-800/50 border border-gray-700 p-3">
-      <div>
-        <code className="text-sm text-emerald-300 font-mono">{name}</code>
-        <div className="text-xs text-gray-500 mt-0.5">{desc}</div>
-      </div>
-      <span className="text-xs px-2 py-0.5 rounded bg-amber-900/30 text-amber-400 border border-amber-700">Required</span>
+    <div className="rounded-lg bg-gray-800/50 border border-gray-700 p-3">
+      <div className="text-xs font-semibold text-white mb-1">{title}</div>
+      <code className="text-[10px] text-emerald-300 font-mono">{command}</code>
+      <div className="text-[10px] text-gray-500 mt-1">Expected: {expected}</div>
     </div>
   )
 }
 
-function CodeBlock({ label, command }: { label: string; command: string }) {
+function IssueCard({ issue, fix }: { issue: string; fix: string }) {
   return (
-    <div className="rounded-lg bg-gray-800 p-3">
-      <div className="text-xs text-gray-400 mb-1">{label}</div>
-      <code className="text-sm text-emerald-300 font-mono">{command}</code>
+    <div className="rounded-lg bg-gray-800/50 border border-gray-700 p-3">
+      <div className="text-sm font-semibold text-amber-400">{issue}</div>
+      <div className="text-xs text-gray-400 mt-1">→ {fix}</div>
     </div>
   )
 }
 
+/* =========================================================
+   ARCHITECTURE TAB
+   ========================================================= */
 function Architecture() {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-white">System Architecture</h2>
 
-      {/* Pipeline */}
       <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6 overflow-x-auto">
         <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Message Processing Pipeline</h3>
-        <div className="min-w-[800px]">
-          <div className="flex items-center gap-2 mb-4">
-            <ArchNode color="green" label="WhatsApp" sub="User" />
+        <div className="min-w-[750px]">
+          <div className="flex items-center gap-2 mb-6">
+            <ArchNode color="green" label="WhatsApp" sub="User sends" />
             <ArchArrow />
-            <ArchNode color="green" label="OpenWA" sub="Bridge" />
+            <ArchNode color="green" label="OpenWA" sub="Receives" />
             <ArchArrow />
-            <ArchNode color="yellow" label="Rate Limit" sub="Middleware" />
+            <ArchNode color="yellow" label="Rate Limit" sub="20/min" />
             <ArchArrow />
-            <ArchNode color="purple" label="Router" sub="Classifier" />
+            <ArchNode color="purple" label="Router" sub="Classify type" />
+            <ArchArrow />
+            <ArchNode color="indigo" label="GPT-4o" sub="Generate reply" />
+            <ArchArrow />
+            <ArchNode color="emerald" label="Reply" sub="Send back" />
           </div>
-          <div className="flex items-start gap-2 ml-[200px]">
-            <div className="flex flex-col gap-2">
-              <ArchNode color="blue" label="Text" sub="→ GPT-4o" />
-              <ArchNode color="orange" label="Voice" sub="→ Deepgram → GPT-4o" />
-              <ArchNode color="cyan" label="Document" sub="→ Azure DI → GPT-4o" />
-              <ArchNode color="pink" label="Image" sub="→ GPT-4 Vision" />
-            </div>
-          </div>
-          <div className="flex items-center gap-2 mt-4">
-            <ArchNode color="indigo" label="Azure OpenAI" sub="GPT-4o" />
-            <ArchArrow />
-            <ArchNode color="emerald" label="Formatter" sub="Plain text" />
-            <ArchArrow />
-            <ArchNode color="green" label="Reply" sub="WhatsApp" />
+          <div className="grid grid-cols-4 gap-3 ml-[190px]">
+            <ArchNode color="blue" label="Text" sub="Direct to LLM" />
+            <ArchNode color="orange" label="Voice" sub="Deepgram STT" />
+            <ArchNode color="cyan" label="Document" sub="Azure DI" />
+            <ArchNode color="pink" label="Image" sub="GPT-4 Vision" />
           </div>
         </div>
       </div>
 
-      {/* Infrastructure */}
       <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
-        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Production Infrastructure</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="rounded-xl bg-blue-950/30 border border-blue-700 p-4">
-            <h4 className="font-semibold text-blue-400 mb-3">Azure Container Apps</h4>
-            <ul className="space-y-1 text-xs text-gray-300">
-              <li>• Auto-scaling (1-3 replicas)</li>
-              <li>• Health probes (/health, /ready)</li>
-              <li>• Managed HTTPS ingress</li>
-              <li>• Log Analytics integration</li>
-              <li>• Revision management</li>
-            </ul>
-          </div>
-          <div className="rounded-xl bg-red-950/30 border border-red-700 p-4">
-            <h4 className="font-semibold text-red-400 mb-3">Azure Cache for Redis</h4>
-            <ul className="space-y-1 text-xs text-gray-300">
-              <li>• Conversation memory per user</li>
-              <li>• Sliding window (last 15 msgs)</li>
-              <li>• TTL auto-expiry (24h)</li>
-              <li>• SSL/TLS encryption</li>
-              <li>• Fallback to in-memory</li>
-            </ul>
-          </div>
-          <div className="rounded-xl bg-purple-950/30 border border-purple-700 p-4">
-            <h4 className="font-semibold text-purple-400 mb-3">GitHub Actions CI/CD</h4>
-            <ul className="space-y-1 text-xs text-gray-300">
-              <li>• Auto build on push to main</li>
-              <li>• Docker image → ACR</li>
-              <li>• Auto deploy to Container Apps</li>
-              <li>• Health check verification</li>
-              <li>• PR validation</li>
-            </ul>
-          </div>
-          <div className="rounded-xl bg-emerald-950/30 border border-emerald-700 p-4">
-            <h4 className="font-semibold text-emerald-400 mb-3">Health & Monitoring</h4>
-            <ul className="space-y-1 text-xs text-gray-300">
-              <li>• HTTP health server (port 3000)</li>
-              <li>• /health — liveness check</li>
-              <li>• /ready — WhatsApp connected?</li>
-              <li>• /metrics — performance data</li>
-              <li>• /status — human-readable</li>
-            </ul>
-          </div>
+        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Azure Infrastructure</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <InfraCard
+            icon="🚀"
+            title="Container Apps"
+            items={['Auto-scaling 1-3 replicas', 'Managed HTTPS', 'Health probes', 'Zero-downtime deploys']}
+          />
+          <InfraCard
+            icon="🔴"
+            title="Redis Cache"
+            items={['Conversation memory', 'Per-user sliding window', 'TTL auto-expiry (24h)', 'SSL/TLS encrypted']}
+          />
+          <InfraCard
+            icon="🐳"
+            title="Container Registry"
+            items={['Stores Docker images', 'CI/CD pushes here', 'GitHub Actions pulls', 'Private access']}
+          />
         </div>
       </div>
 
-      {/* Graceful Degradation */}
       <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
         <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Graceful Degradation</h3>
-        <div className="space-y-3">
-          <DegradeRow primary="Redis" fallback="In-memory (node-cache)" note="Conversation memory persists vs. lost on restart" />
-          <DegradeRow primary="Azure Document Intelligence" fallback="GPT-4 Vision" note="Structured extraction vs. general image understanding" />
-          <DegradeRow primary="Deepgram STT" fallback="Error message to user" note="Ask user to type instead" />
-          <DegradeRow primary="Azure OpenAI" fallback="Retry with backoff" note="Handles rate limits and transient errors" />
+        <div className="space-y-2">
+          {[
+            ['Redis unavailable', 'Falls back to in-memory (node-cache)'],
+            ['Azure Doc Intelligence unavailable', 'Falls back to GPT-4 Vision'],
+            ['Deepgram fails', 'Returns error message, asks user to type'],
+            ['Azure OpenAI rate limited', 'Auto-retry with exponential backoff'],
+          ].map(([primary, fallback], i) => (
+            <div key={i} className="flex items-center gap-3 rounded-lg bg-gray-800/50 p-3">
+              <div className="flex-1 text-sm text-white">{primary}</div>
+              <div className="text-gray-600">→</div>
+              <div className="flex-1 text-sm text-amber-400 text-right">{fallback}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -475,295 +678,303 @@ function ArchArrow() {
   return <div className="text-gray-600 text-sm">→</div>
 }
 
-function DegradeRow({ primary, fallback, note }: { primary: string; fallback: string; note: string }) {
+function InfraCard({ icon, title, items }: { icon: string; title: string; items: string[] }) {
   return (
-    <div className="flex items-center gap-3 rounded-lg bg-gray-800/50 p-3">
-      <div className="flex-1">
-        <div className="text-sm font-semibold text-white">{primary}</div>
-        <div className="text-[10px] text-gray-500">{note}</div>
+    <div className="rounded-xl bg-gray-800/30 border border-gray-700 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xl">{icon}</span>
+        <h4 className="font-semibold text-white text-sm">{title}</h4>
       </div>
-      <div className="text-gray-600">→</div>
-      <div className="flex-1 text-right">
-        <div className="text-sm text-amber-400">{fallback}</div>
-      </div>
+      <ul className="space-y-1">
+        {items.map((item, i) => (
+          <li key={i} className="text-xs text-gray-400">• {item}</li>
+        ))}
+      </ul>
     </div>
   )
 }
 
+/* =========================================================
+   COMMANDS TAB
+   ========================================================= */
 function Commands() {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-white">Admin Commands & Testing</h2>
 
-      {/* Admin Commands */}
       <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
-        <h3 className="text-lg font-bold text-white mb-4">⌨️ Admin Commands</h3>
-        <p className="text-sm text-gray-400 mb-4">
-          Send these from your admin phone number (set in <code className="text-emerald-300">ADMIN_PHONE_NUMBER</code>).
-          Non-admin users' commands are silently ignored.
+        <h3 className="text-lg font-bold text-white mb-2">⌨️ Admin Commands</h3>
+        <p className="text-xs text-gray-400 mb-4">
+          Send these from your admin phone number (set in ADMIN_PHONE_NUMBER). Non-admin commands are silently ignored.
         </p>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {[
-            { cmd: '/status', desc: 'Show bot uptime, active users, memory usage, Node version' },
-            { cmd: '/metrics', desc: 'Show message counts, response times (avg/p95/p99), errors' },
-            { cmd: '/users', desc: 'List all active users with conversation history' },
-            { cmd: '/clear <phone>', desc: 'Clear conversation history for a specific user' },
-            { cmd: '/clearall', desc: 'Clear ALL conversation histories (use with caution)' },
-            { cmd: '/ratelimit', desc: 'Show rate limit stats — who is being throttled' },
-            { cmd: '/ping', desc: 'Quick liveness check — returns "Pong!"' },
-            { cmd: '/help', desc: 'List all available admin commands' },
-          ].map((c, i) => (
+            ['/status', 'Bot uptime, active users, memory usage'],
+            ['/metrics', 'Message counts, response times (avg/p95/p99), errors'],
+            ['/users', 'List all active users with conversation history'],
+            ['/clear <phone>', 'Clear conversation for a specific user'],
+            ['/clearall', 'Clear ALL conversations (use carefully)'],
+            ['/ratelimit', 'Show who is being rate-limited'],
+            ['/ping', 'Quick liveness check'],
+            ['/help', 'List all admin commands'],
+          ].map(([cmd, desc], i) => (
             <div key={i} className="flex items-start gap-3 rounded-lg bg-gray-800/50 border border-gray-700 p-3">
-              <code className="text-sm text-emerald-300 font-mono font-bold shrink-0">{c.cmd}</code>
-              <span className="text-xs text-gray-400">{c.desc}</span>
+              <code className="text-sm text-emerald-300 font-mono font-bold shrink-0 min-w-[120px]">{cmd}</code>
+              <span className="text-xs text-gray-400">{desc}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Test Scenarios */}
       <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
-        <h3 className="text-lg font-bold text-white mb-4">🧪 Test Scenarios</h3>
-        <div className="space-y-4">
-          <TestGroup
-            title="Text Messages"
-            tests={[
-              '"I have a headache since morning" → Health advice',
-              '"hey whats up" → Polite redirect to health topics',
-              '"mera sir dard kar raha hai" → Hinglish response',
-              '"मुझे बुखार है" → Hindi response',
-              'Multiple messages → Context maintained',
-            ]}
-          />
-          <TestGroup
-            title="Voice Notes"
-            tests={[
-              'English voice note → Transcribe + respond',
-              'Hindi voice note → Detect language + respond in Hindi',
-              'Unclear audio → Ask to retry or type',
-            ]}
-          />
-          <TestGroup
-            title="Documents & Images"
-            tests={[
-              'Blood test report photo → Extract values, explain',
-              'Prescription PDF → Read medications',
-              'Skin rash photo → Describe without diagnosing',
-              'Non-health image → Polite redirect',
-            ]}
-          />
-          <TestGroup
-            title="Edge Cases"
-            tests={[
-              'Rapid messages → Rate limited after 20/min',
-              'Sticker/location → Unsupported type message',
-              '24h gap → Fresh conversation (TTL expiry)',
-              'Very long message → Still 3-5 line response',
-            ]}
-          />
+        <h3 className="text-lg font-bold text-white mb-4">🧪 Test Checklist</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            { title: 'Text', tests: ['"I have a headache"', '"hey whats up" (redirect)', 'Hinglish message', 'Hindi message (Devanagari)'] },
+            { title: 'Voice', tests: ['English voice note', 'Hindi voice note', 'Unclear audio (retry prompt)'] },
+            { title: 'Documents', tests: ['Lab report photo', 'Prescription PDF', 'Blurry document (retry)'] },
+            { title: 'Edge Cases', tests: ['Rapid messages (rate limit)', 'Sticker (unsupported)', '24h gap (fresh context)'] },
+          ].map((group, i) => (
+            <div key={i} className="rounded-xl bg-gray-800/30 border border-gray-700 p-4">
+              <h4 className="text-sm font-semibold text-white mb-2">{group.title}</h4>
+              {group.tests.map((t, j) => (
+                <label key={j} className="flex items-start gap-2 text-xs text-gray-300 cursor-pointer py-0.5">
+                  <input type="checkbox" className="mt-0.5 rounded border-gray-600 bg-gray-700 text-emerald-500" />
+                  {t}
+                </label>
+              ))}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Health Endpoints */}
       <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
         <h3 className="text-lg font-bold text-white mb-4">🏥 Health Endpoints</h3>
-        <div className="space-y-3">
-          <EndpointRow method="GET" path="/health" desc="Liveness — always 200 if process running" />
-          <EndpointRow method="GET" path="/ready" desc="Readiness — 200 only if WhatsApp connected" />
-          <EndpointRow method="GET" path="/metrics" desc="JSON metrics — messages, timing, errors" />
-          <EndpointRow method="GET" path="/status" desc="Human-readable status with all details" />
+        <div className="space-y-2">
+          {[
+            ['GET', '/health', 'Liveness — 200 if process running'],
+            ['GET', '/ready', 'Readiness — 200 if WhatsApp connected'],
+            ['GET', '/metrics', 'JSON metrics — messages, timing, errors'],
+            ['GET', '/status', 'Human-readable full status'],
+          ].map(([method, path, desc], i) => (
+            <div key={i} className="flex items-center gap-3 rounded-lg bg-gray-800/50 border border-gray-700 p-3">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-900 text-emerald-400 font-mono font-bold">{method}</span>
+              <code className="text-sm text-gray-200 font-mono">{path}</code>
+              <span className="text-xs text-gray-500 ml-auto">{desc}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   )
 }
 
-function TestGroup({ title, tests }: { title: string; tests: string[] }) {
-  return (
-    <div className="rounded-xl bg-gray-800/30 border border-gray-700 p-4">
-      <h4 className="text-sm font-semibold text-white mb-2">{title}</h4>
-      <div className="space-y-1">
-        {tests.map((t, i) => (
-          <div key={i} className="flex items-start gap-2 text-xs text-gray-300">
-            <input type="checkbox" className="mt-0.5 rounded border-gray-600 bg-gray-700 text-emerald-500" />
-            <span>{t}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function EndpointRow({ method, path, desc }: { method: string; path: string; desc: string }) {
-  return (
-    <div className="flex items-center gap-3 rounded-lg bg-gray-800/50 border border-gray-700 p-3">
-      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-900 text-emerald-400 font-mono font-bold">{method}</span>
-      <code className="text-sm text-gray-200 font-mono">{path}</code>
-      <span className="text-xs text-gray-500 ml-auto">{desc}</span>
-    </div>
-  )
-}
-
+/* =========================================================
+   MONITORING TAB
+   ========================================================= */
 function Monitoring() {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-white">Monitoring & Operations</h2>
 
-      {/* Metrics Explained */}
       <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
-        <h3 className="text-lg font-bold text-white mb-4">📊 Collected Metrics</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <MetricGroup
-            title="Message Counters"
-            metrics={['totalMessages', 'textMessages', 'voiceMessages', 'documentMessages', 'imageMessages']}
-          />
-          <MetricGroup
-            title="Performance"
-            metrics={['avgResponseTime (ms)', 'p95ResponseTime (ms)', 'p99ResponseTime (ms)', 'messagesPerHour']}
-          />
-          <MetricGroup
-            title="Health"
-            metrics={['errors', 'rateLimits', 'adminCommands', 'uptime']}
-          />
-          <MetricGroup
-            title="System"
-            metrics={['memoryUsage (heap)', 'nodeVersion', 'environment', 'whatsappStatus']}
-          />
+        <h3 className="text-lg font-bold text-white mb-4">📊 Metrics Collected</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: 'Total Messages', icon: '💬' },
+            { label: 'Avg Response Time', icon: '⚡' },
+            { label: 'P95 Response Time', icon: '📈' },
+            { label: 'Active Users', icon: '👥' },
+            { label: 'Errors', icon: '❌' },
+            { label: 'Rate Limits', icon: '🚫' },
+            { label: 'Memory Usage', icon: '💾' },
+            { label: 'Uptime', icon: '⏱️' },
+          ].map((m, i) => (
+            <div key={i} className="rounded-lg bg-gray-800/50 border border-gray-700 p-3 text-center">
+              <div className="text-xl mb-1">{m.icon}</div>
+              <div className="text-xs text-gray-300">{m.label}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Logging */}
       <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
-        <h3 className="text-lg font-bold text-white mb-4">📝 Logging</h3>
+        <h3 className="text-lg font-bold text-white mb-4">📝 Viewing Logs</h3>
         <div className="space-y-3">
-          <div className="rounded-lg bg-gray-800 p-3">
-            <div className="text-xs text-gray-400 mb-1">Development (console)</div>
-            <code className="text-sm text-emerald-300">npm run dev</code>
-          </div>
-          <div className="rounded-lg bg-gray-800 p-3">
-            <div className="text-xs text-gray-400 mb-1">Production (PM2)</div>
-            <code className="text-sm text-emerald-300">npm run pm2:logs</code>
-          </div>
-          <div className="rounded-lg bg-gray-800 p-3">
-            <div className="text-xs text-gray-400 mb-1">Docker</div>
-            <code className="text-sm text-emerald-300">docker-compose logs -f shy-bot</code>
-          </div>
-          <div className="rounded-lg bg-gray-800 p-3">
-            <div className="text-xs text-gray-400 mb-1">Azure Container Apps</div>
-            <code className="text-sm text-emerald-300">az containerapp logs show --name shy-bot --resource-group prakrit-ai-rg --follow</code>
-          </div>
-        </div>
-        <div className="mt-4 rounded-lg bg-gray-800/50 p-3">
-          <div className="text-xs text-gray-400 mb-2">Log Levels (set via LOG_LEVEL env var):</div>
-          <div className="flex flex-wrap gap-2">
-            {['error', 'warn', 'info', 'debug', 'trace'].map((level) => (
-              <span key={level} className="text-[10px] px-2 py-0.5 rounded bg-gray-700 text-gray-300 font-mono">{level}</span>
-            ))}
-          </div>
+          <CodeBlock label="Azure Container Apps (production)" commands={[
+            'az containerapp logs show \\',
+            '  --name shy-bot \\',
+            '  --resource-group prakrit-ai-rg \\',
+            '  --follow',
+          ]} />
+          <CodeBlock label="Docker (local)" commands={['docker-compose logs -f shy-bot']} />
+          <CodeBlock label="PM2 (VPS)" commands={['npm run pm2:logs']} />
         </div>
       </div>
 
-      {/* Cost Tracking */}
       <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
-        <h3 className="text-lg font-bold text-white mb-4">💰 Cost Estimation</h3>
+        <h3 className="text-lg font-bold text-white mb-4">💰 Monthly Cost Estimate</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-700">
                 <th className="text-left py-2 text-gray-400">Service</th>
-                <th className="text-left py-2 text-gray-400">Low Usage</th>
-                <th className="text-left py-2 text-gray-400">Medium</th>
-                <th className="text-left py-2 text-gray-400">High</th>
+                <th className="text-right py-2 text-gray-400">Low</th>
+                <th className="text-right py-2 text-gray-400">Medium</th>
+                <th className="text-right py-2 text-gray-400">High</th>
               </tr>
             </thead>
             <tbody className="text-gray-300">
-              <tr className="border-b border-gray-800">
-                <td className="py-2">Azure Container Apps</td>
-                <td className="py-2">$20</td>
-                <td className="py-2">$30</td>
-                <td className="py-2">$40</td>
-              </tr>
-              <tr className="border-b border-gray-800">
-                <td className="py-2">Redis (Basic)</td>
-                <td className="py-2">$15</td>
-                <td className="py-2">$15</td>
-                <td className="py-2">$15</td>
-              </tr>
-              <tr className="border-b border-gray-800">
-                <td className="py-2">Azure OpenAI (per 1K msgs)</td>
-                <td className="py-2">$5</td>
-                <td className="py-2">$150</td>
-                <td className="py-2">$1500</td>
-              </tr>
-              <tr className="border-b border-gray-800">
-                <td className="py-2">Deepgram (per 1K msgs)</td>
-                <td className="py-2">$1</td>
-                <td className="py-2">$30</td>
-                <td className="py-2">$300</td>
-              </tr>
-              <tr className="font-semibold">
+              {[
+                ['Azure Container Apps', '$20', '$30', '$40'],
+                ['Redis (Basic C0)', '$15', '$15', '$15'],
+                ['ACR + Log Analytics', '$10', '$10', '$10'],
+                ['Azure OpenAI (per 1K msgs)', '$5', '$150', '$1500'],
+                ['Deepgram (per 1K msgs)', '$1', '$30', '$300'],
+              ].map(([service, low, med, high], i) => (
+                <tr key={i} className="border-b border-gray-800">
+                  <td className="py-2">{service}</td>
+                  <td className="py-2 text-right">{low}</td>
+                  <td className="py-2 text-right">{med}</td>
+                  <td className="py-2 text-right">{high}</td>
+                </tr>
+              ))}
+              <tr className="font-bold">
                 <td className="py-2 text-white">Total/month</td>
-                <td className="py-2 text-emerald-400">~$70</td>
-                <td className="py-2 text-emerald-400">~$245</td>
-                <td className="py-2 text-emerald-400">~$1900</td>
+                <td className="py-2 text-right text-emerald-400">~$70</td>
+                <td className="py-2 text-right text-emerald-400">~$245</td>
+                <td className="py-2 text-right text-emerald-400">~$1900</td>
               </tr>
             </tbody>
           </table>
         </div>
+        <p className="text-xs text-gray-500 mt-2">Low = 100 msgs/day, Medium = 1000 msgs/day, High = 10000 msgs/day</p>
       </div>
 
-      {/* Troubleshooting */}
       <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
-        <h3 className="text-lg font-bold text-white mb-4">🔧 Common Issues</h3>
-        <div className="space-y-3">
-          <IssueRow
-            issue="WhatsApp session expired"
-            fix="Restart bot (pm2 restart shy-bot), re-scan QR code from logs"
-          />
-          <IssueRow
-            issue="Deepgram transcription fails"
-            fix="Check API key, verify audio format (OGG/OPUS), check quota"
-          />
-          <IssueRow
-            issue="Azure OpenAI rate limited"
-            fix="Bot auto-retries. If persistent, upgrade TPM tier in Azure Portal"
-          />
-          <IssueRow
-            issue="High memory usage"
-            fix="Reduce MAX_CONVERSATION_HISTORY, reduce CONVERSATION_TTL_HOURS"
-          />
-          <IssueRow
-            issue="Redis connection lost"
-            fix="Bot falls back to in-memory automatically. Check Redis health."
-          />
-          <IssueRow
-            issue="Container won't start"
-            fix="Check secrets are set, check logs: az containerapp logs show"
-          />
+        <h3 className="text-lg font-bold text-white mb-4">🔧 Common Issues & Fixes</h3>
+        <div className="space-y-2">
+          {[
+            ['WhatsApp session expired', 'Restart container, re-scan QR from logs'],
+            ['Deepgram transcription fails', 'Check API key, verify audio format, check quota'],
+            ['Azure OpenAI rate limited', 'Bot auto-retries. If persistent, upgrade TPM tier'],
+            ['High memory usage', 'Reduce MAX_CONVERSATION_HISTORY or CONVERSATION_TTL_HOURS'],
+            ['Redis connection lost', 'Bot auto-falls back to in-memory cache'],
+            ['Container won\'t start', 'Check secrets: az containerapp secret list'],
+          ].map(([issue, fix], i) => (
+            <div key={i} className="rounded-lg bg-gray-800/50 border border-gray-700 p-3">
+              <div className="text-sm font-semibold text-amber-400">{issue}</div>
+              <div className="text-xs text-gray-400 mt-1">→ {fix}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   )
 }
 
-function MetricGroup({ title, metrics }: { title: string; metrics: string[] }) {
+/* =========================================================
+   FILE REFERENCE TAB
+   ========================================================= */
+function FileReference() {
   return (
-    <div className="rounded-xl bg-gray-800/30 border border-gray-700 p-4">
-      <h4 className="text-sm font-semibold text-emerald-400 mb-2">{title}</h4>
-      <div className="space-y-1">
-        {metrics.map((m, i) => (
-          <div key={i} className="text-xs text-gray-300 font-mono">{m}</div>
-        ))}
-      </div>
-    </div>
-  )
-}
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-white">File Reference</h2>
 
-function IssueRow({ issue, fix }: { issue: string; fix: string }) {
-  return (
-    <div className="rounded-lg bg-gray-800/50 border border-gray-700 p-3">
-      <div className="text-sm font-semibold text-amber-400">{issue}</div>
-      <div className="text-xs text-gray-400 mt-1">→ {fix}</div>
+      <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
+        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Complete Project Structure</h3>
+        <pre className="text-sm bg-gray-800 rounded-xl p-4 overflow-x-auto font-mono text-gray-300 leading-relaxed">
+{`prakrit-ai-shy/
+│
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml              # GitHub Actions: build → push → deploy
+│
+├── bot/                            # ← The WhatsApp bot
+│   ├── src/
+│   │   ├── bot.js                 # Entry point — OpenWA setup, event handlers
+│   │   ├── router.js              # Message type classifier (text/voice/doc/image)
+│   │   ├── server.js              # HTTP health check server (:3000)
+│   │   │
+│   │   ├── config/
+│   │   │   └── index.js           # Env loader + validation
+│   │   │
+│   │   ├── processors/
+│   │   │   ├── text.js            # Text → language detect → GPT-4o
+│   │   │   ├── voice.js           # Voice → Deepgram STT → text processor
+│   │   │   ├── document.js        # Doc → Azure DI / Vision → GPT-4o
+│   │   │   └── image.js           # Image → GPT-4 Vision → GPT-4o
+│   │   │
+│   │   ├── services/
+│   │   │   ├── azure-openai.js    # Azure OpenAI client (chat + vision)
+│   │   │   ├── deepgram.js        # Deepgram STT (Nova-2, multilingual)
+│   │   │   ├── azure-docs.js      # Azure Document Intelligence
+│   │   │   ├── memory.js          # Conversation memory (Redis / in-memory)
+│   │   │   └── metrics.js         # Performance metrics collector
+│   │   │
+│   │   ├── middleware/
+│   │   │   ├── rateLimit.js       # Rate limiter (20 msgs/min per user)
+│   │   │   └── admin.js           # Admin commands (/status, /clear, etc.)
+│   │   │
+│   │   ├── prompts/
+│   │   │   └── system.js          # Shy's system prompt (parameterized)
+│   │   │
+│   │   └── utils/
+│   │       ├── formatter.js       # Strip markdown, limit to 3-5 lines
+│   │       ├── language.js        # Language detection (franc + heuristics)
+│   │       └── logger.js          # Pino structured logging
+│   │
+│   ├── scripts/
+│   │   └── azure-setup.sh         # One-click Azure infrastructure setup
+│   │
+│   ├── docs/
+│   │   ├── AZURE_DEPLOYMENT.md    # Complete Azure deployment guide
+│   │   └── GITHUB_SECRETS.md      # GitHub secrets configuration
+│   │
+│   ├── Dockerfile                  # Multi-stage production Docker build
+│   ├── docker-compose.yml          # Local dev (bot + Redis)
+│   ├── .dockerignore
+│   ├── .env.example                # Environment template
+│   ├── .gitignore
+│   ├── pm2.config.js               # PM2 process manager config
+│   ├── package.json
+│   └── README.md
+│
+├── src/                            # React dashboard (this page)
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
+│
+├── .gitignore
+├── README.md                       # Root README
+├── package.json                    # Dashboard dependencies
+└── vite.config.js`}
+        </pre>
+      </div>
+
+      <div className="rounded-2xl bg-gray-900 border border-gray-700 p-6">
+        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Key Files Explained</h3>
+        <div className="space-y-3">
+          {[
+            { file: 'bot.js', desc: 'The heart of the bot. Initializes OpenWA, registers message handler, starts health server, manages lifecycle. Every incoming message flows through here.' },
+            { file: 'router.js', desc: 'Looks at message.type to decide: is this text, voice, document, or image? Then calls the right processor. Also handles unsupported types.' },
+            { file: 'processors/text.js', desc: 'The most-used processor. Detects language, builds system prompt with language rule, fetches conversation history, calls GPT-4o, formats response.' },
+            { file: 'services/azure-openai.js', desc: 'Wrapper around @azure/openai SDK. Two functions: chatCompletion (text) and visionCompletion (image + text). Handles errors and retries.' },
+            { file: 'services/memory.js', desc: 'Per-user conversation history. Uses Redis if available, falls back to node-cache. Sliding window of last 15 messages. Auto-expires after 24 hours.' },
+            { file: 'middleware/rateLimit.js', desc: 'Prevents abuse. Limits each user to 20 messages per minute. Returns friendly "please wait" message when exceeded.' },
+            { file: 'middleware/admin.js', desc: 'Special commands only the bot owner can use. Checks sender phone number against ADMIN_PHONE_NUMBER. Supports /status, /clear, /users, etc.' },
+            { file: 'server.js', desc: 'Lightweight HTTP server on port 3000. Exposes /health (liveness), /ready (WhatsApp connected?), /metrics (JSON), /status (human-readable).' },
+            { file: 'Dockerfile', desc: 'Multi-stage build. Stage 1: install deps. Stage 2: production image with Chromium, ffmpeg, regional fonts. Runs as non-root user. Includes HEALTHCHECK.' },
+            { file: 'ci-cd.yml', desc: 'GitHub Actions workflow. On push to main: build Docker image → push to ACR → update Container App → verify health check. Fully automated.' },
+            { file: 'azure-setup.sh', desc: 'Bash script that creates all Azure resources in one shot. Resource group, ACR, Container Apps env, Redis, Container app. Edit variables at top to customize.' },
+          ].map((f, i) => (
+            <div key={i} className="rounded-lg bg-gray-800/30 border border-gray-700 p-3">
+              <code className="text-sm text-emerald-300 font-mono font-bold">{f.file}</code>
+              <p className="text-xs text-gray-400 mt-1">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
