@@ -1,0 +1,165 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  AZURE_CONTAINER_REGISTRY: prakritai.azurecr.io
+  CONTAINER_NAME: shy-bot
+  RESOURCE_GROUP: prakrit-ai-rg
+  CONTAINER_APP_ENV: prakrit-ai-env
+  CONTAINER_APP_NAME: shy-bot
+
+jobs:
+  # --- CI: Build & Test ---
+  ci:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./bot
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './bot/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting (if configured)
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: Run tests (if configured)
+        run: npm test --if-present
+        continue-on-error: true
+
+      - name: Validate config files
+        run: |
+          echo "Checking .env.example exists..."
+          test -f .env.example
+          echo "Checking Dockerfile exists..."
+          test -f Dockerfile
+          echo "Checking docker-compose.yml exists..."
+          test -f docker-compose.yml
+          echo "✅ All config files present"
+
+  # --- Build & Push Docker Image ---
+  build:
+    name: Build & Push Docker Image
+    needs: ci
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./bot
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.AZURE_CONTAINER_REGISTRY }}
+          username: ${{ secrets.AZURE_ACR_USERNAME }}
+          password: ${{ secrets.AZURE_ACR_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./bot
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # --- Deploy to Azure Container Apps ---
+  deploy:
+    name: Deploy to Azure
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    environment:
+      name: production
+      url: https://${{ env.CONTAINER_APP_NAME }}.${{ env.CONTAINER_APP_ENV }}.azurecontainerapps.io
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Container Apps
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            IMAGE_TAG="${{ github.sha }}"
+            
+            az containerapp update \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --image ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME }}:${IMAGE_TAG} \
+              --set-env-vars \
+                "DEEPGRAM_API_KEY=secretref:deepgram-api-key" \
+                "AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint" \
+                "AZURE_OPENAI_API_KEY=secretref:azure-openai-api-key" \
+                "AZURE_OPENAI_DEPLOYMENT=secretref:azure-openai-deployment" \
+                "BOT_NAME=Shy" \
+                "NODE_ENV=production" \
+                "LOG_LEVEL=info"
+
+      - name: Verify deployment
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            echo "Waiting for deployment to stabilize..."
+            sleep 30
+            
+            # Get the FQDN
+            FQDN=$(az containerapp show \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --query "properties.configuration.ingress.fqdn" \
+              --output tsv)
+            
+            echo "Container App FQDN: $FQDN"
+            
+            # Health check
+            curl -f "https://$FQDN/health" || exit 1
+            echo "✅ Deployment successful!"
+
+      - name: Azure Logout
+        if: always()
+        run: az logout
