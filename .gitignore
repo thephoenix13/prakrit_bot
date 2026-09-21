@@ -1,5 +1,42 @@
+# Dependencies
 node_modules/
-.next/
-dist/
-build/
+bot/node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+bot/.env
+
+# Logs
+logs/
 *.log
+bot/logs/
+npm-debug.log*
+
+# OpenWA session
+.openwa-auth/
+bot/.openwa-auth/
+
+# Build output
+dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Docker
+docker-compose.override.yml
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+.next/
+build/

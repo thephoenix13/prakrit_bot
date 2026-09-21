@@ -5,15 +5,22 @@
  * This file:
  * 1. Initializes OpenWA (WhatsApp Web client)
  * 2. Sets up conversation memory
- * 3. Listens for incoming messages
- * 4. Routes messages to appropriate processors
- * 5. Sends responses back via WhatsApp
+ * 3. Starts health check HTTP server
+ * 4. Listens for incoming messages
+ * 5. Applies rate limiting + admin commands
+ * 6. Routes messages to appropriate processors
+ * 7. Sends responses back via WhatsApp
+ * 8. Records metrics
  */
 
-const { create, Client } = require('@open-wa/wa-automate');
+const { create } = require('@open-wa/wa-automate');
 const { config, validate } = require('./config');
 const memory = require('./services/memory');
 const { routeMessage } = require('./router');
+const { checkRateLimit, getRateLimitMessage } = require('./middleware/rateLimit');
+const { handleAdminCommand } = require('./middleware/admin');
+const metrics = require('./services/metrics');
+const healthServer = require('./server');
 const logger = require('./utils/logger');
 
 // Track state
@@ -37,6 +44,7 @@ async function onMessage(message) {
 
   const userId = message.sender?.id || message.author || message.from;
   const chatId = message.chatId || message.from;
+  const startTime = Date.now();
 
   logger.info({
     userId,
@@ -47,19 +55,65 @@ async function onMessage(message) {
 
   messageCount++;
 
-  try {
-    // Send a "thinking" indicator (optional — WhatsApp doesn't natively support this well)
-    // await client.simulateTyping(chatId, true);
+  // --- Rate Limiting ---
+  const rateCheck = checkRateLimit(userId);
+  if (!rateCheck.allowed) {
+    metrics.recordRateLimit();
+    try {
+      await client.sendText(chatId, getRateLimitMessage(rateCheck.retryAfterMs));
+    } catch (sendErr) {
+      logger.error({ err: sendErr.message }, 'Could not send rate limit message');
+    }
+    return;
+  }
 
-    // Route and process the message
+  try {
+    // --- Admin Commands ---
+    if (message.body && message.type === 'chat') {
+      const adminResult = await handleAdminCommand(userId, message.body);
+      if (adminResult.isCommand) {
+        metrics.recordAdminCommand();
+        if (adminResult.response) {
+          await client.sendText(chatId, adminResult.response);
+        }
+        return;
+      }
+    }
+
+    // --- Simulate typing indicator ---
+    try {
+      await client.simulateTyping(chatId, true);
+    } catch {
+      // Typing simulation is optional, ignore failures
+    }
+
+    // --- Route and process the message ---
     const response = await routeMessage(message, client);
+
+    // Stop typing
+    try {
+      await client.simulateTyping(chatId, false);
+    } catch {
+      // Ignore
+    }
 
     if (response) {
       // Send the response
       await client.sendText(chatId, response);
-      logger.info({ userId, responseLength: response.length }, '📤 Response sent');
+
+      // Record metrics
+      const responseTime = Date.now() - startTime;
+      const msgType = message.type === 'chat' ? 'text'
+        : (message.type === 'ptt' || message.type === 'audio') ? 'voice'
+        : message.type === 'document' ? 'document'
+        : message.type === 'image' ? 'image'
+        : 'other';
+
+      metrics.recordMessage(msgType, responseTime);
+      logger.info({ userId, responseLength: response.length, responseTime: `${responseTime}ms` }, '📤 Response sent');
     }
   } catch (err) {
+    metrics.recordError();
     logger.error({ err: err.message, userId, stack: err.stack }, '❌ Error processing message');
 
     // Send a fallback error message
@@ -97,6 +151,9 @@ function onConnectionState(state) {
   logger.info({ state }, 'Connection state changed');
   isReady = state === 'CONNECTED';
 
+  // Update health server readiness
+  healthServer.setConnected(isReady);
+
   if (isReady) {
     logger.info('✅ Shy is connected and ready!');
   } else {
@@ -126,6 +183,9 @@ async function start() {
 
   // Initialize memory
   await memory.init();
+
+  // Start health check HTTP server
+  healthServer.startServer();
 
   // Create OpenWA client
   logger.info('📱 Initializing WhatsApp client (OpenWA)...');
@@ -187,6 +247,9 @@ function keepAlive() {
  */
 async function shutdown(signal) {
   logger.info({ signal }, 'Shutting down gracefully...');
+
+  // Stop health server
+  healthServer.stopServer();
 
   if (client) {
     try {
